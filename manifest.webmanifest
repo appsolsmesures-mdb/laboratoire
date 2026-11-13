@@ -1,0 +1,19 @@
+{
+  "name": "SOL MESURES · Laboratoire",
+  "short_name": "Labo SM",
+  "description": "Essais, PV et dossiers du laboratoire SOL MESURES",
+  "lang": "fr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "any",
+  "background_color": "#F2F5F8",
+  "theme_color": "#0B4870",
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-masquable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

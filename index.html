@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SOL MESURES · Laboratoire</title>
+<meta name="description" content="Essais, PV et dossiers du laboratoire SOL MESURES">
+<meta name="theme-color" content="#0B4870">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Labo SM">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icones/favicon-32.png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<style>
+:root{--navy:#0B4870;--blue:#0884BC;--pale:#EAF4FA;--grey:#6B7680;--ink:#1F2A33;--bg:#F2F5F8}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+[hidden]{display:none!important}
+#cadre{position:fixed;inset:0;width:100%;height:100%;border:0;background:var(--bg);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#ecran{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;background:var(--bg)}
+#ecran img{width:150px;height:auto}
+.roue{width:34px;height:34px;border:3px solid var(--pale);border-top-color:var(--blue);border-radius:50%;animation:r .9s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+#message{color:var(--grey)}
+#aide{max-width:520px;text-align:left;font-size:13.5px;color:var(--grey);background:#fff;border:1px solid #DCE3EA;border-radius:12px;padding:14px 16px}
+#aide p{margin:0 0 8px}
+.bts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bts button{font:inherit;cursor:pointer;border-radius:9px;padding:8px 14px;border:1px solid var(--blue);color:var(--navy);background:#fff}
+.bts button.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+#horsLigne{background:#fff4d6;border:1px solid #f1d58a;color:#6b5200;border-radius:10px;padding:10px 14px;max-width:520px}
+</style>
+</head>
+<body>
+
+<div id="ecran">
+  <img src="icones/logo.png" alt="Laboratoire SOLS MESURES">
+  <div class="roue" id="roue"></div>
+  <div id="message">Ouverture du laboratoire…</div>
+  <div id="horsLigne" hidden>Pas de connexion Internet : l’application s’ouvrira dès le retour du réseau.</div>
+  <div id="aide" hidden>
+    <p><b>L’application ne répond pas encore.</b></p>
+    <p>– connexion Internet lente : patientez ou touchez « Recharger » ;<br>
+       – la dernière version n’est peut-être pas déployée (Apps Script &gt; Déployer &gt; Gérer les déploiements &gt; Nouvelle version).</p>
+    <div class="bts"><button class="pri" id="btRecharger" type="button">Recharger</button><button id="btNavigateur" type="button">Ouvrir dans le navigateur</button><button id="btMasquer" type="button">Masquer ce message</button></div>
+  </div>
+</div>
+
+<script src="application.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.SOL_MESURES_APPLICATION || {}, $ = function (id) { return document.getElementById(id); };
+  var cadre = null, minuterie = null, dernierChargement = 0;
+  var url = String(A.url || '').trim();
+  if (A.nom) document.title = A.nom;
+
+  function adresseCadre() { return url + (url.indexOf('?') < 0 ? '?' : '&') + 'cadre=1'; }
+  function attendre() {
+    $('ecran').hidden = false; $('roue').hidden = false; $('aide').hidden = true;
+    $('message').textContent = 'Ouverture du laboratoire…';
+    clearTimeout(minuterie);
+    minuterie = setTimeout(function () { $('aide').hidden = false; }, 15000);
+  }
+  function prete() { clearTimeout(minuterie); $('ecran').hidden = true; }
+  /* (re)chargement : location.replace dans un cadre déjà ouvert, pour ne pas empiler l'historique */
+  function charger() {
+    if (!url) return;
+    attendre();
+    dernierChargement = Date.now();
+    if (!cadre) {
+      cadre = document.createElement('iframe');
+      cadre.id = 'cadre'; cadre.title = A.nom || 'Laboratoire';
+      cadre.setAttribute('allow', 'clipboard-read; clipboard-write; fullscreen');
+      cadre.src = adresseCadre();
+      document.body.insertBefore(cadre, $('ecran'));
+      return;
+    }
+    try { cadre.contentWindow.location.replace(adresseCadre()); } catch (e) { cadre.src = adresseCadre(); }
+  }
+  /* la page Apps Script est dans un cadre Google, lui-même dans le nôtre : on remonte les parents de l'émetteur */
+  function vientDuCadre(source) {
+    for (var w = source, n = 0; w && n < 6; n++) { if (cadre && w === cadre.contentWindow) return true; if (w === w.parent) break; w = w.parent; }
+    return false;
+  }
+  window.addEventListener('message', function (ev) {
+    var m = ev.data;
+    if (!m || typeof m.geotec !== 'string') return;
+    var google = /^https:\/\/([\w-]+\.googleusercontent\.com|script\.google\.com)$/.test(ev.origin);
+    var essaiLocal = location.hostname === 'localhost' && /^http:\/\/localhost:\d+$/.test(ev.origin);   /* test sur ce PC seulement */
+    if (!(google || essaiLocal) || !vientDuCadre(ev.source)) return;
+    if (m.geotec === 'pret') prete();
+    /* l'application a quitté sa page (rechargement, session expirée) : on la rouvre, sinon le cadre Google reste blanc */
+    else if (m.geotec === 'recharger' && Date.now() - dernierChargement > 4000) charger();
+  });
+
+  $('btRecharger').addEventListener('click', charger);
+  $('btNavigateur').addEventListener('click', function () { window.open(url, '_blank', 'noopener'); });
+  $('btMasquer').addEventListener('click', prete);
+  function reseau() { $('horsLigne').hidden = navigator.onLine !== false; }
+  window.addEventListener('online', function () { reseau(); if (!$('ecran').hidden) charger(); });
+  window.addEventListener('offline', reseau); reseau();
+
+  if (!url) {
+    $('roue').hidden = true;
+    $('message').innerHTML = '<b>Adresse de l’application non renseignée.</b><br>Indiquez l’adresse /exec du déploiement dans le fichier <code>application.js</code>.';
+  } else charger();
+
+  /* la page du lanceur s'ouvre aussi sans réseau (l'application, elle, a besoin d'Internet) */
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () { });
+})();
+</script>
+</body>
+</html>
