@@ -3,7 +3,7 @@
   "short_name": "Labo SM",
   "description": "Essais, PV et dossiers du laboratoire SOL MESURES",
   "lang": "fr",
-  "id": "./",
+  "id": "sol-mesures-laboratoire",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
