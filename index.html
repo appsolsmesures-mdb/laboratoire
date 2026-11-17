@@ -93,6 +93,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1
     if (m.geotec === 'pret') prete();
     /* l'application a quitté sa page (rechargement, session expirée) : on la rouvre, sinon le cadre Google reste blanc */
     else if (m.geotec === 'recharger' && Date.now() - dernierChargement > 4000) charger();
+    /* impression d'un PV : le nom du fichier PDF proposé est le titre de la page -> nom du PV, puis retour au nom de l'application */
+    else if (m.geotec === 'titre') document.title = typeof m.titre === 'string' && m.titre.trim() ? m.titre.replace(/[\u0000-\u001F<>]/g, '').slice(0, 150) : (A.nom || 'Laboratoire');
   });
 
   $('btRecharger').addEventListener('click', charger);
